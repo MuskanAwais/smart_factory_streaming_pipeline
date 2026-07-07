@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Generated IoT data (producer output)
+data/
+
+# Spark / Delta streaming checkpoints
+checkpoints/
+spark-warehouse/
+metastore_db/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
