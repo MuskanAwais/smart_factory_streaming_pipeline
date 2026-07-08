@@ -34,8 +34,8 @@ Source of truth:
 | 2 IoT Producer | Done | JSON events + ~5% corrupt records + unit tests |
 | 3 Databricks + Spark Basics | Done | Free Edition workspace + batch notebook |
 | 4 Bronze Streaming | Done | `bronze_events` via `readStream` + `availableNow` trigger |
-| 5 Silver Cleaning | Next | `silver_events` with validation |
-| 6 Gold Analytics | Not started | |
+| 5 Silver Cleaning | Done | `silver_events` with validation, corrupt rows dropped |
+| 6 Gold Analytics | Next | `gold_machine_metrics` windowed metrics |
 | 7 Dashboard | Not started | |
 | 8 Testing + Docs | Partial | Producer tests exist; full suite later |
 
@@ -58,15 +58,14 @@ Latest commits:
 | Landing path in DBX | `/Volumes/workspace/default/smart_factory/landing` |
 | Local landing path | `data/landing/` (gitignored) |
 
-Module 4 verified:
-- `readStream` ingests landing JSON into `bronze_events` (170 rows in first batch)
-- append mode + checkpoint at `checkpoints/bronze`
-- corrupt rows kept in Bronze
-- Free Edition uses `trigger(availableNow=True)` — re-run ingest cell when new files arrive
+Module 5 verified:
+- Silver reads Bronze as stream, casts/types, parses `event_time` with `try_to_timestamp`
+- Invalid rows dropped (280 Bronze → 267 Silver = 13 removed)
+- Corrupt rows not in Silver; `status` lowercase; no nulls in required columns
 
-Bronze paths:
-- Table: `/Volumes/workspace/default/smart_factory/tables/bronze_events`
-- Checkpoint: `/Volumes/workspace/default/smart_factory/checkpoints/bronze`
+Silver paths:
+- Table: `/Volumes/workspace/default/smart_factory/tables/silver_events`
+- Checkpoint: `/Volumes/workspace/default/smart_factory/checkpoints/silver`
 
 ---
 
@@ -103,6 +102,7 @@ producer/
 notebooks/
   01_spark_basics.py          # Module 3 (batch only)
   03_bronze.py                # Module 4 (Bronze streaming)
+  04_silver.py                # Module 5 (Silver cleaning)
 
 tests/
   test_producer.py
@@ -115,7 +115,6 @@ data/landing/                 # local JSON output (gitignored)
 ```
 
 Not created yet (intentional):
-- `notebooks/04_silver.py`
 - `notebooks/05_gold.py`
 
 ---
@@ -139,19 +138,19 @@ In Databricks, open / import `notebooks/01_spark_basics.py` and keep:
 
 ---
 
-## 7. Next module (Module 5 — Silver)
+## 7. Next module (Module 6 — Gold)
 
-Goal: read `bronze_events` as a stream, clean/validate, write `silver_events`.
+Goal: read `silver_events` as a stream, compute per-machine 1-minute window metrics, write `gold_machine_metrics`.
 
 Will introduce:
-- streaming read from Delta (Bronze → Silver)
-- type casting (`temperature`, `humidity`, `vibration` → double)
-- parse `timestamp` → `event_time`
-- validation rules from REQ-DATA-2 (drop bad rows)
-- checkpoint at `checkpoints/silver`
+- watermark on `event_time` (2 minutes)
+- 1-minute tumbling windows
+- aggregations: `avg_temperature`, `max_temperature`, `avg_vibration`, `event_count`, `error_count`
+- `is_overheating` flag when `max_temperature > 85`
+- checkpoint at `checkpoints/gold`
+- output mode `update` (per SPEC)
 
 Out of scope until later modules:
-- Gold window aggregations
 - Dashboard
 
 ---
@@ -165,4 +164,4 @@ Out of scope until later modules:
 
 ---
 
-*Last updated: 2026-07-08 — Module 4 complete; ready for Module 5.*
+*Last updated: 2026-07-08 — Module 5 complete; ready for Module 6.*
