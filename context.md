@@ -35,8 +35,8 @@ Source of truth:
 | 3 Databricks + Spark Basics | Done | Free Edition workspace + batch notebook |
 | 4 Bronze Streaming | Done | `bronze_events` via `readStream` + `availableNow` trigger |
 | 5 Silver Cleaning | Done | `silver_events` with validation, corrupt rows dropped |
-| 6 Gold Analytics | Next | `gold_machine_metrics` windowed metrics |
-| 7 Dashboard | Not started | |
+| 6 Gold Analytics | Done | `gold_machine_metrics` windowed metrics + overheating flag |
+| 7 Dashboard | Next | Databricks SQL dashboard |
 | 8 Testing + Docs | Partial | Producer tests exist; full suite later |
 
 Latest commits:
@@ -58,14 +58,15 @@ Latest commits:
 | Landing path in DBX | `/Volumes/workspace/default/smart_factory/landing` |
 | Local landing path | `data/landing/` (gitignored) |
 
-Module 5 verified:
-- Silver reads Bronze as stream, casts/types, parses `event_time` with `try_to_timestamp`
-- Invalid rows dropped (280 Bronze → 267 Silver = 13 removed)
-- Corrupt rows not in Silver; `status` lowercase; no nulls in required columns
+Module 6 verified:
+- Gold reads Silver as stream with 2-minute watermark + 1-minute tumbling windows
+- Metrics: `avg_temperature`, `max_temperature`, `avg_vibration`, `event_count`, `error_count`
+- `is_overheating` when `max_temperature > 85`
+- Free Edition: `outputMode("append")` (Delta does not support `update` on serverless)
 
-Silver paths:
-- Table: `/Volumes/workspace/default/smart_factory/tables/silver_events`
-- Checkpoint: `/Volumes/workspace/default/smart_factory/checkpoints/silver`
+Gold paths:
+- Table: `/Volumes/workspace/default/smart_factory/tables/gold_machine_metrics`
+- Checkpoint: `/Volumes/workspace/default/smart_factory/checkpoints/gold`
 
 ---
 
@@ -103,6 +104,7 @@ notebooks/
   01_spark_basics.py          # Module 3 (batch only)
   03_bronze.py                # Module 4 (Bronze streaming)
   04_silver.py                # Module 5 (Silver cleaning)
+  05_gold.py                  # Module 6 (Gold windowed metrics)
 
 tests/
   test_producer.py
@@ -115,7 +117,7 @@ data/landing/                 # local JSON output (gitignored)
 ```
 
 Not created yet (intentional):
-- `notebooks/05_gold.py`
+- Dashboard SQL queries / screenshots (Module 7)
 
 ---
 
@@ -138,22 +140,15 @@ In Databricks, open / import `notebooks/01_spark_basics.py` and keep:
 
 ---
 
-## 7. Next module (Module 6 — Gold)
+## 7. Next module (Module 7 — Dashboard)
 
-Goal: read `silver_events` as a stream, compute per-machine 1-minute window metrics, write `gold_machine_metrics`.
+Goal: build a Databricks SQL dashboard over `gold_machine_metrics`.
 
-Will introduce:
-- watermark on `event_time` (2 minutes)
-- 1-minute tumbling windows
-- aggregations: `avg_temperature`, `max_temperature`, `avg_vibration`, `event_count`, `error_count`
-- `is_overheating` flag when `max_temperature > 85`
-- checkpoint at `checkpoints/gold`
-- output mode `update` (per SPEC)
-
-Out of scope until later modules:
-- Dashboard
-
----
+Tiles (per SPEC):
+- Average temperature per machine (line chart)
+- Machines currently in error (counter/table)
+- Overheating alerts (`is_overheating = true`)
+- Vibration trend per machine (line chart)
 
 ## 8. Working rules
 
@@ -164,4 +159,4 @@ Out of scope until later modules:
 
 ---
 
-*Last updated: 2026-07-08 — Module 5 complete; ready for Module 6.*
+*Last updated: 2026-07-08 — Module 6 complete; ready for Module 7.*
