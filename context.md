@@ -37,7 +37,7 @@ Source of truth:
 | 5 Silver Cleaning | Done | `silver_events` with validation, corrupt rows dropped |
 | 6 Gold Analytics | Done | `gold_machine_metrics` windowed metrics + overheating flag |
 | 7 Dashboard | Done | AI/BI dashboard over `gold_machine_metrics` (4 tiles) |
-| 8 Testing + Docs | Next | Full pytest suite, README, screenshots |
+| 8 Testing + Docs | Done | 27 pytest tests, README, validation module; add screenshots |
 
 Latest commits:
 - `7c01e70` Initial project structure
@@ -143,15 +143,15 @@ In Databricks, open / import `notebooks/01_spark_basics.py` and keep:
 
 ---
 
-## 7. Next module (Module 8 — Testing and Documentation)
+## 7. Module 8 complete
 
-Goal: portfolio-ready repo.
-
-Tasks:
-- `tests/test_validation.py` for REQ-DATA-2 rules
-- Full `pytest` pass
-- README with screenshots in `docs/screenshots/`
-- Optional: push to GitHub
+- `producer/validation.py` — REQ-DATA-2 rules (mirrors Silver logic)
+- `tests/test_validation.py` — 13 validation tests
+- `tests/test_producer.py` — 14 producer tests (AC-8.1)
+- `pytest -v` — 27 passed (AC-8.3)
+- `README.md` — full run instructions + architecture (AC-8.4)
+- `docs/screenshots/` — add bronze/silver/gold/dashboard PNGs (AC-8.5)
+- Push to GitHub when ready (AC-8.6)
 
 ## 8. Working rules
 
@@ -162,4 +162,4 @@ Tasks:
 
 ---
 
-*Last updated: 2026-07-08 — Module 7 complete; ready for Module 8.*
+*Last updated: 2026-07-08 — Module 8 complete; project portfolio-ready pending screenshots + GitHub push.*
