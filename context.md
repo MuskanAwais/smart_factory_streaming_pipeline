@@ -36,8 +36,8 @@ Source of truth:
 | 4 Bronze Streaming | Done | `bronze_events` via `readStream` + `availableNow` trigger |
 | 5 Silver Cleaning | Done | `silver_events` with validation, corrupt rows dropped |
 | 6 Gold Analytics | Done | `gold_machine_metrics` windowed metrics + overheating flag |
-| 7 Dashboard | Next | Databricks SQL dashboard |
-| 8 Testing + Docs | Partial | Producer tests exist; full suite later |
+| 7 Dashboard | Done | AI/BI dashboard over `gold_machine_metrics` (4 tiles) |
+| 8 Testing + Docs | Next | Full pytest suite, README, screenshots |
 
 Latest commits:
 - `7c01e70` Initial project structure
@@ -64,9 +64,12 @@ Module 6 verified:
 - `is_overheating` when `max_temperature > 85`
 - Free Edition: `outputMode("append")` (Delta does not support `update` on serverless)
 
-Gold paths:
-- Table: `/Volumes/workspace/default/smart_factory/tables/gold_machine_metrics`
-- Checkpoint: `/Volumes/workspace/default/smart_factory/checkpoints/gold`
+Module 7 verified:
+- VIEW: `workspace.default.gold_machine_metrics` over Delta path
+- AI/BI dashboard: 4 tiles (temp line, errors table, overheating table, vibration line)
+- Auto-refresh enabled on published dashboard
+
+Dashboard SQL queries: `docs/dashboard_queries.sql`
 
 ---
 
@@ -140,15 +143,15 @@ In Databricks, open / import `notebooks/01_spark_basics.py` and keep:
 
 ---
 
-## 7. Next module (Module 7 — Dashboard)
+## 7. Next module (Module 8 — Testing and Documentation)
 
-Goal: build a Databricks SQL dashboard over `gold_machine_metrics`.
+Goal: portfolio-ready repo.
 
-Tiles (per SPEC):
-- Average temperature per machine (line chart)
-- Machines currently in error (counter/table)
-- Overheating alerts (`is_overheating = true`)
-- Vibration trend per machine (line chart)
+Tasks:
+- `tests/test_validation.py` for REQ-DATA-2 rules
+- Full `pytest` pass
+- README with screenshots in `docs/screenshots/`
+- Optional: push to GitHub
 
 ## 8. Working rules
 
@@ -159,4 +162,4 @@ Tiles (per SPEC):
 
 ---
 
-*Last updated: 2026-07-08 — Module 6 complete; ready for Module 7.*
+*Last updated: 2026-07-08 — Module 7 complete; ready for Module 8.*
