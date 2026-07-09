@@ -7,7 +7,8 @@ Add portfolio screenshots from your Databricks workspace:
 | `bronze_table.png` | Bronze notebook verification — `bronze_events` row count + sample rows |
 | `silver_table.png` | Silver notebook verification — `silver_events` row count + sample rows |
 | `gold_table.png` | Gold notebook verification — `gold_machine_metrics` sample rows |
-| `dashboard.png` | AI/BI dashboard with all 4 tiles |
+| `pipeline_health.png` | `06_run_pipeline.py` health summary table after a full run |
+| `dashboard.png` | AI/BI dashboard with all 6 tiles (see `docs/DASHBOARD_SETUP.md`) |
 
 ## How to capture
 
@@ -17,3 +18,12 @@ Add portfolio screenshots from your Databricks workspace:
 4. Save files here with the names above
 
 The main README links to these images once they exist.
+
+## Dashboard tiles to include in `dashboard.png`
+
+1. Pipeline Flow KPIs
+2. Data Quality Funnel
+3. Ingestion Activity
+4. Temperature by Machine
+5. Machine Health Alerts
+6. Vibration Trend

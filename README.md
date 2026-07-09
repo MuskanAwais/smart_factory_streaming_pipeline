@@ -2,143 +2,125 @@
 
 Real-time IoT streaming pipeline for a smart factory, built on Databricks Structured Streaming and Delta Lake using a Bronze → Silver → Gold Medallion architecture.
 
+**Fully automated on Databricks** — producer writes to landing volume, scheduled job runs Bronze → Silver → Gold, dashboard auto-refreshes. No manual uploads.
+
 ## Problem
 
 A factory has machines with sensors reporting **temperature**, **humidity**, **vibration**, and **status** every second. If a machine overheats or vibrates too much it can break down and stop production. A daily batch report is too slow — problems must be seen **in real time**.
 
 ## Architecture
 
+Full step-by-step diagram: **[.planning/ARCHITECTURE.md](.planning/ARCHITECTURE.md)** · ![Architecture](.planning/architecture.png)
+
 ```mermaid
 flowchart TD
-    A["Python IoT Producer<br/>generates JSON events"] --> B["Landing Folder<br/>JSON files"]
-    B --> C["Structured Streaming<br/>readStream"]
-    C --> D["Bronze Delta Table<br/>raw events"]
-    D --> E["Silver Delta Table<br/>cleaned events"]
-    E --> F["Gold Delta Table<br/>windowed metrics"]
-    F --> G["Databricks SQL Dashboard<br/>machine health"]
+    JOB["Databricks Job<br/>every 2 min"]
+    PROD["02_producer / 07_auto_pipeline<br/>writes JSON to landing"]
+    LAND["Landing Volume"]
+    BRZ["Bronze Delta"]
+    SLV["Silver Delta"]
+    GLD["Gold Delta"]
+    LOG["pipeline_runs log"]
+    DASH["Dashboard<br/>auto-refresh 30s"]
+
+    JOB --> PROD --> LAND --> BRZ --> SLV --> GLD
+    PROD --> LOG
+    GLD --> DASH
+    LOG --> DASH
 ```
 
-1. **Producer** writes one JSON event per machine per second to `data/landing/`.
-2. **Bronze** ingests raw events, unchanged, via Structured Streaming.
-3. **Silver** cleans, types, and validates the data.
-4. **Gold** computes per-machine, per-minute metrics and alerts.
-5. **Dashboard** shows live machine health in Databricks SQL.
+## Quick Start (Databricks — ~10 min one-time setup)
+
+| Step | Action | Guide |
+|---|---|---|
+| 1 | Create volume `smart_factory` in Catalog | [JOB_SETUP.md](docs/JOB_SETUP.md) |
+| 2 | Import notebooks from GitHub | [JOB_SETUP.md](docs/JOB_SETUP.md) |
+| 3 | Run `00_setup.py` once | Creates folders, tables, SQL views |
+| 4 | Run `07_auto_pipeline.py` once (test) | Producer → Bronze → Silver → Gold |
+| 5 | Schedule `07_auto_pipeline.py` as Job (every 2 min) | [JOB_SETUP.md](docs/JOB_SETUP.md) |
+| 6 | Build 6-tile dashboard | [DASHBOARD_SETUP.md](docs/DASHBOARD_SETUP.md) |
+
+After setup: **fully automatic** — no manual uploads, no manual notebook runs.
 
 ## Tech Stack
 
 | Technology | Purpose |
 |---|---|
-| Python | IoT event producer and tests |
-| Databricks Free Edition | Cloud Spark + Delta platform |
-| PySpark + Structured Streaming | Continuous processing |
-| Delta Lake | Reliable table storage |
-| SQL + AI/BI Dashboard | Gold queries and live dashboard |
+| Databricks Free Edition | Cloud Spark + Delta + Jobs + Dashboard |
+| PySpark + Structured Streaming | Medallion streaming layers |
+| Delta Lake | Bronze, Silver, Gold, pipeline_runs tables |
+| Unity Catalog Volumes | Landing + table storage |
+| AI/BI Dashboard | 6 auto-refreshing visualizations |
+| GitHub | Version control for notebooks |
 
 ## Project Structure
 
 ```text
 smart-factory-streaming-pipeline/
-├── producer/
-│   ├── generate_events.py    # IoT event simulator
-│   ├── config.py             # machine count, rate, paths
-│   └── validation.py         # REQ-DATA-2 validation rules
 ├── notebooks/
-│   ├── 01_spark_basics.py    # Module 3 — batch PySpark
-│   ├── 03_bronze.py          # Module 4 — Bronze streaming
-│   ├── 04_silver.py          # Module 5 — Silver cleaning
-│   └── 05_gold.py            # Module 6 — Gold windowed metrics
-├── tests/
-│   ├── test_producer.py
-│   └── test_validation.py
+│   ├── 00_config.py            # Shared paths and constants
+│   ├── 00_setup.py             # One-time volume + views setup
+│   ├── 01_spark_basics.py      # Batch PySpark learning
+│   ├── 02_producer.py          # IoT producer → landing volume
+│   ├── 03_bronze.py            # Bronze streaming (individual)
+│   ├── 04_silver.py            # Silver streaming (individual)
+│   ├── 05_gold.py              # Gold streaming (individual)
+│   ├── 06_run_pipeline.py      # Manual pipeline runner
+│   └── 07_auto_pipeline.py     # ★ Automated pipeline (schedule this)
+├── producer/                   # Local producer + tests
 ├── docs/
-│   ├── dashboard_queries.sql
-│   └── screenshots/            # Bronze, Silver, Gold, dashboard images
-├── data/landing/               # local JSON output (gitignored)
-├── .planning/                  # MASTER_PLAN.md and SPEC.md
-├── requirements.txt
-└── README.md
+│   ├── JOB_SETUP.md            # Schedule automated pipeline
+│   ├── DASHBOARD_SETUP.md      # Build 6-tile dashboard
+│   └── dashboard_queries.sql   # Dashboard SQL queries
+├── tests/
+└── .planning/                  # SDD, SPEC, ARCHITECTURE
 ```
 
-## Getting Started (local)
-
-```bash
-# 1. Create and activate a virtual environment
-python -m venv .venv
-
-# Windows
-.venv\Scripts\activate
-
-# macOS / Linux
-source .venv/bin/activate
-
-# 2. Install dependencies
-pip install -r requirements.txt
-
-# 3. Run tests
-pytest -v
-
-# 4. Start the IoT producer (Ctrl+C to stop)
-python -m producer.generate_events
-```
-
-JSON files are written to `data/landing/`. Upload new files to Databricks volume landing for pipeline ingestion.
-
-## Databricks Pipeline
-
-### Paths (Unity Catalog volume)
+## Databricks Paths
 
 | Asset | Path |
 |---|---|
 | Landing | `/Volumes/workspace/default/smart_factory/landing` |
-| Bronze table | `/Volumes/workspace/default/smart_factory/tables/bronze_events` |
-| Silver table | `/Volumes/workspace/default/smart_factory/tables/silver_events` |
-| Gold table | `/Volumes/workspace/default/smart_factory/tables/gold_machine_metrics` |
-| Gold SQL view | `workspace.default.gold_machine_metrics` |
+| Bronze | `/Volumes/workspace/default/smart_factory/tables/bronze_events` |
+| Silver | `/Volumes/workspace/default/smart_factory/tables/silver_events` |
+| Gold | `/Volumes/workspace/default/smart_factory/tables/gold_machine_metrics` |
+| Pipeline log | `/Volumes/workspace/default/smart_factory/tables/pipeline_runs` |
+| SQL views | `workspace.default.pipeline_health`, `.pipeline_runs`, etc. |
 
-### Run order in Databricks
+## Dashboard (6 tiles — auto-updating)
 
-1. Import notebooks from `notebooks/`
-2. Upload sample JSON to landing (or producer output)
-3. Run `03_bronze.py` ingest cell (`trigger(availableNow=True)`)
-4. Run `04_silver.py` ingest cell
-5. Run `05_gold.py` ingest cell
-6. Create dashboard using queries in `docs/dashboard_queries.sql`
-
-### Free Edition notes
-
-- Use `trigger(availableNow=True)` instead of `processingTime` (serverless limitation)
-- Gold Delta writes use `append` mode (not `update`)
-- Register Gold for SQL with a VIEW over the Delta path (see `docs/dashboard_queries.sql`)
-- Re-run ingest cells when new landing files are uploaded
-
-## Screenshots
-
-Portfolio screenshots live in `docs/screenshots/`:
-
-| Image | Description |
+| Tile | What it shows |
 |---|---|
-| `bronze_table.png` | Bronze `bronze_events` sample rows |
-| `silver_table.png` | Silver `silver_events` cleaned data |
-| `gold_table.png` | Gold `gold_machine_metrics` windowed metrics |
-| `dashboard.png` | AI/BI machine health dashboard |
+| 1 — Pipeline Flow | Landing → Bronze → Silver → Gold row counts + what happens |
+| 2 — Quality Funnel | Raw vs valid vs rejected (bar chart) |
+| 3 — Ingestion Activity | Events per minute (line chart) |
+| 4 — Temperature Trend | Avg temperature per machine |
+| 5 — Health Alerts | Overheating + error machines |
+| 6 — Pipeline Run History | Row counts growing over time per job run |
 
-See [docs/screenshots/README.md](docs/screenshots/README.md) for capture instructions.
+## Local Development (tests only)
 
-## Build Status
+```bash
+python -m venv .venv
+.venv\Scripts\activate        # Windows
+pip install -r requirements.txt
+pytest -v
+```
 
-| Module | Status |
-|---|---|
-| 1 Project Setup | Done |
-| 2 IoT Producer | Done |
-| 3 Spark Basics | Done |
-| 4 Bronze Streaming | Done |
-| 5 Silver Cleaning | Done |
-| 6 Gold Analytics | Done |
-| 7 Dashboard | Done |
-| 8 Testing + Docs | Done |
+Local producer (`python -m producer.generate_events`) is for unit tests only. The **Databricks pipeline is fully automatic**.
 
-Spec and learning guide: [`.planning/SPEC.md`](.planning/SPEC.md) · [`.planning/MASTER_PLAN.md`](.planning/MASTER_PLAN.md)
+## Free Edition Notes
+
+- `trigger(availableNow=True)` — processes all pending data per job run
+- Schedule Job every 2–5 minutes for near-real-time updates
+- Gold uses `append` mode; SQL VIEWs for dashboard access
 
 ## Interview One-Liner
 
-> I built a real-time IoT streaming pipeline for a smart factory. A Python script simulates machines sending sensor data every second. I ingest the data into Databricks using Structured Streaming and store it in Delta Lake with a Medallion architecture: Bronze keeps raw events, Silver cleans and validates them, and Gold computes per-minute metrics like average temperature and overheating alerts. A Databricks dashboard shows live machine health. The pipeline uses checkpoints for fault tolerance and watermarks to handle late-arriving data.
+> I built an automated IoT streaming pipeline on Databricks. A scheduled job simulates 10 factory machines, writes JSON directly to a Unity Catalog volume, and runs Structured Streaming through Bronze, Silver, and Gold Delta tables with checkpoints and watermarks. Each run is logged to a pipeline_runs table. An AI/BI dashboard with 6 tiles auto-refreshes to show data flow, quality funnel, ingestion rate, temperature trends, alerts, and pipeline growth over time — no manual uploads.
+
+## Documentation
+
+- [JOB_SETUP.md](docs/JOB_SETUP.md) — Schedule the automated pipeline
+- [DASHBOARD_SETUP.md](docs/DASHBOARD_SETUP.md) — Build the dashboard
+- [SPEC.md](.planning/SPEC.md) · [SDD.md](.planning/SDD.md) · [ARCHITECTURE.md](.planning/ARCHITECTURE.md)
