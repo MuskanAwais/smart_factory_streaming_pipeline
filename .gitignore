@@ -21,4 +21,5 @@ metastore_db/
 .DS_Store
 Thumbs.db
 .idea/
-.vscode/
+config.bat
+node_modules
