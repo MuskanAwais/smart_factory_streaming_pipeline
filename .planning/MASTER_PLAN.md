@@ -125,7 +125,7 @@ flowchart TD
 
 ![Architecture Diagram](architecture.png)
 
-> A rendered version is saved at `.planning/architecture.png` and `docs/architecture.png`.
+> A rendered version is saved at `.planning/architecture.png` and `.planning/architecture.svg`. Full ELT step-by-step guide: [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Simple Data Flow
 
@@ -310,12 +310,15 @@ smart-factory-streaming-pipeline/
 │   └── test_validation.py
 │
 ├── docs/
-│   ├── architecture.png
+│   ├── dashboard_queries.sql
 │   └── screenshots/
 │
 ├── .planning/
 │   ├── MASTER_PLAN.md          # Learning and build guide
-│   └── SPEC.md                 # Spec-driven requirements (acceptance criteria per module)
+│   ├── SPEC.md                 # Spec-driven requirements (acceptance criteria per module)
+│   ├── ARCHITECTURE.md         # ELT step-by-step + file map
+│   ├── architecture.png        # Rendered architecture diagram
+│   └── architecture.svg        # Scalable vector diagram
 │
 ├── requirements.txt
 ├── .gitignore
@@ -445,7 +448,7 @@ At the end of the project, you should have:
 
 - ✅ **Working streaming pipeline** — producer → Bronze → Silver → Gold, running live
 - ✅ **GitHub repository** — all code, notebooks, and docs committed
-- ✅ **Architecture diagram** — Mermaid in this plan + `docs/architecture.png`
+- ✅ **Architecture diagram** — Mermaid in this plan + `.planning/architecture.png` / `.planning/ARCHITECTURE.md`
 - ✅ **README** — explains the project and how to run it
 - ✅ **Screenshots** — streaming queries, Delta tables, dashboard
 - ✅ **Dashboard** — live Databricks SQL dashboard with machine health metrics
